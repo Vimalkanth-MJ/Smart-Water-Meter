@@ -9,9 +9,8 @@ void setup() {
 }
 
 void loop() {
-  volume = 2.120*pulse; 
-  Serial.print(volume);
-  Serial.println(" mL");
+  volume = 2.120*pulse/1000; 
+  Serial.printf("Total volume:%f L\n",volume);
   delay(500);
 }
 void increase() {
