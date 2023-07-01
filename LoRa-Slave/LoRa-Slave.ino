@@ -32,7 +32,7 @@ byte Destination_Master = 0x01; //--> destination to send to Master (ESP32).
 int sensorPin = 4;
 int relayPin = 15;
 volatile long pulse, pulse1;
-float cost, credits;
+float cost, creditsOld, totalCredits, flowCredits;
 float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
 const float FLOW_CALIBRATION = 7.5;
@@ -91,10 +91,10 @@ void Processing_incoming_data()
   if (readingID == DeviceID)
   {
     totalLitresOld = atof(Incoming.substring(pos1 + 1, pos2).c_str());
-    credits = atof(Incoming.substring(pos2 + 1, pos3).c_str());
+    creditsOld = atof(Incoming.substring(pos2 + 1, pos3).c_str());
     cost = atof(Incoming.substring(pos3 + 1, Incoming.length()).c_str());
     Serial.printf("Cost per Litre: %.2f \n", cost);
-    Serial.printf("Available Credits: %.2f \n", credits);
+    Serial.printf("Available Credits: %.2f \n", creditsOld);
     Serial.printf("Volume Consumed: %.2f \n", totalLitresOld);
   }
 }
@@ -109,10 +109,11 @@ void getReadings() {
     oldTime = millis(); // Update oldTime
     flowLitres =  2.126 * pulse1 / 1000;
     totalLitres = totalLitresOld + flowLitres;
-
+    flowCredits = flowLitres * cost;
+    totalCredits = creditsOld - flowCredits;
     Serial.printf("Flow rate: %.2f L/min\n", flowRate);
     Serial.printf("Total volume: %.3f L\n", totalLitres);
-
+    Serial.printf("Avl. Credits: %.2f L\n", totalCredits);
     if (flowRate > 0)
     {
       sendLoRaData();
@@ -128,7 +129,7 @@ void getReadings() {
 //           void sendLoRaData()
 //----------------------------------------
 void sendLoRaData() {
-  Message = String(DeviceID) + "/" + String(totalLitres) + "&" + String(credits) + "#" + String(cost);
+  Message = String(DeviceID) + "/" + String(totalLitres) + "&" + String(totalCredits) + "#" + String(cost);
   sendMessage(Message, Destination_Master);
 }
 
@@ -162,7 +163,7 @@ void DisplayData()
   display.setCursor(0, 50);
   display.print("Avl Credits:");
   display.setCursor(85, 50);
-  display.print(credits);
+  display.print(totalCredits);
   display.display();
 }
 

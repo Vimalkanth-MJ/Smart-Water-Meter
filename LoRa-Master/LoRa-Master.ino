@@ -127,7 +127,7 @@ void setup() {
     while (true);                       // if failed, do nothing
   }
   Serial.println("LoRa init succeeded.");
-  cost1 = 5, volume1 = 0, credits1 = 100, cost2 = 5, volume2 = 0, credits2 = 100;
+  cost1 = 10, volume1 = 0, credits1 = 100, cost2 = 10, volume2 = 0, credits2 = 100;
 }
 
 void loop() {
