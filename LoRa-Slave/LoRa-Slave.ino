@@ -102,7 +102,7 @@ void Processing_incoming_data()
 //           void getReadings()
 //----------------------------------------
 void getReadings() {
-  
+
   if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
     detachInterrupt(digitalPinToInterrupt(sensorPin));
     flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
@@ -112,7 +112,7 @@ void getReadings() {
 
     Serial.printf("Flow rate: %.2f L/min\n", flowRate);
     Serial.printf("Total volume: %.3f L\n", totalLitres);
-    
+
     if (flowRate > 0)
     {
       sendLoRaData();
@@ -147,18 +147,22 @@ void DisplayData()
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
-   display.setCursor(0, 10);
+  display.setCursor(0, 10);
   display.print("Total Volume:");
   display.setCursor(85, 10);
   display.print(totalLitres);
+  display.setCursor(120, 10);
+  display.print("L");
   display.setCursor(0, 30);
   display.print("Flow Rate:");
-  display.setCursor(85, 30);
+  display.setCursor(65, 30);
   display.print(flowRate);
+  display.setCursor(100, 30);
+  display.print("L/m");
   display.setCursor(0, 50);
   display.print("Avl Credits:");
   display.setCursor(85, 50);
-  display.print(credits); 
+  display.print(credits);
   display.display();
 }
 
