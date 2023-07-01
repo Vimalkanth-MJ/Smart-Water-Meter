@@ -7,19 +7,19 @@
 #define dio0 2
 
 String Incoming = "";
-String Message = "";            
+String Message = "";
 
-byte LocalAddress = 0x01;              
-byte Destination_ESP32_Slave_1 = 0x02;  
-byte Destination_ESP32_Slave_2 = 0x03;  
+byte LocalAddress = 0x01;
+byte Destination_ESP32_Slave_1 = 0x02;
+byte Destination_ESP32_Slave_2 = 0x03;
 
 unsigned long previousMillis_SendMSG = 0;
 const long interval_SendMSG = 1000;
 
 byte Slv = 0;
 
-float cost1,volume1,credits1;
-float cost2,volume2,credits2;
+float cost1, volume1, credits1;
+float cost2, volume2, credits2;
 
 void sendMessage(String Outgoing, byte Destination) {
   LoRa.beginPacket();             //--> start packet
@@ -37,7 +37,7 @@ void onReceive(int packetSize) {
   int recipient = LoRa.read();        //--> recipient address
   byte sender = LoRa.read();          //--> sender address
   byte incomingLength = LoRa.read();  //--> incoming msg length
-  //---------------------------------------- 
+  //----------------------------------------
 
   // Clears Incoming variable data.
   Incoming = "";
@@ -46,7 +46,7 @@ void onReceive(int packetSize) {
   while (LoRa.available()) {
     Incoming += (char)LoRa.read();
   }
-  //---------------------------------------- 
+  //----------------------------------------
 
   //---------------------------------------- Check length for error.
   if (incomingLength != Incoming.length()) {
@@ -54,7 +54,7 @@ void onReceive(int packetSize) {
     Serial.println("error: message length does not match length");
     return; //--> skip rest of function
   }
-  //---------------------------------------- 
+  //----------------------------------------
 
   //---------------------------------------- Checks whether the incoming data or message for this device.
   if (recipient != LocalAddress) {
@@ -62,7 +62,7 @@ void onReceive(int packetSize) {
     Serial.println("This message is not for me.");
     return; //--> skip rest of function
   }
-  //---------------------------------------- 
+  //----------------------------------------
 
   //---------------------------------------- if message is for this device, or broadcast, print details:
   Serial.println();
@@ -70,6 +70,23 @@ void onReceive(int packetSize) {
   //Serial.println("Message length: " + String(incomingLength));
   Serial.println("Message: " + Incoming);
   Serial.println("RSSI: " + String(LoRa.packetRssi()));
+  if (Incoming.startsWith("Hi")) {
+    if (sender == Destination_ESP32_Slave_1)
+    {
+      Message = "";
+      Message = "Slave01/" + String(volume1) + "&" + String(credits1) + "#" + String(cost1);
+      Serial.println(" : " + Message);
+      sendMessage(Message, Destination_ESP32_Slave_1);
+    }
+    else
+    {
+      Message = "";
+      Message = "Slave02/" + String(volume2) + "&" + String(credits2) + "#" + String(cost2);
+      Serial.println(" : " + Message);
+      sendMessage(Message, Destination_ESP32_Slave_2);
+    }
+  }
+  else {
     int pos1 = Incoming.indexOf('/');
     int pos2 = Incoming.indexOf('&');
     int pos3 = Incoming.indexOf('#');
@@ -95,6 +112,7 @@ void onReceive(int packetSize) {
     else
     {
     }
+  }
 }
 
 void setup() {
@@ -113,35 +131,5 @@ void setup() {
 }
 
 void loop() {
-
-  
-  unsigned long currentMillis_SendMSG = millis();
-  
-  if (currentMillis_SendMSG - previousMillis_SendMSG >= interval_SendMSG) {
-    previousMillis_SendMSG = currentMillis_SendMSG;
-
-    Slv++;
-    if (Slv > 2) Slv = 1;
-
-    if (Slv == 1) {
-      Serial.println();
-      Serial.print("Send message to ESP32 Slave " + String(Slv));
-      Message = "";
-      Message = "Slave01/" + String(volume1) + "&" + String(credits1) + "#" + String(cost1);
-      Serial.println(" : " + Message);
-      sendMessage(Message, Destination_ESP32_Slave_1);
-    }
-
-    if (Slv == 2) {
-      Serial.println();
-      Serial.print("Send message to ESP32 Slave " + String(Slv));
-      Message = "";
-      Message = "Slave02/" + String(volume2) + "&" + String(credits2) + "#" + String(cost2);
-      Serial.println(" : " + Message);
-      sendMessage(Message, Destination_ESP32_Slave_2);
-    }
-
-  }
   onReceive(LoRa.parsePacket());
-
 }

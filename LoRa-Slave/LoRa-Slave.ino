@@ -32,7 +32,8 @@ byte Destination_Master = 0x01; //--> destination to send to Master (ESP32).
 int sensorPin = 4;
 int relayPin = 15;
 volatile long pulse, pulse1;
-float cost,volume,credits,flowRate, currentVolume;
+float cost, credits;
+float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
 const float FLOW_CALIBRATION = 7.5;
 
@@ -48,49 +49,39 @@ void sendMessage(String Outgoing, byte Destination) {
 void onReceive(int packetSize) {
   if (packetSize == 0) return;  //--> if there's no packet, return
 
-  //---------------------------------------- read packet header bytes:
+  //read packet header bytes:
   int recipient = LoRa.read();        //--> recipient address
   byte sender = LoRa.read();          //--> sender address
   byte incomingLength = LoRa.read();  //--> incoming msg length
-  //----------------------------------------
 
-  // Clears Incoming variable data.
   Incoming = "";
 
-  //---------------------------------------- Get all incoming data.
+  //Get all incoming data.
   while (LoRa.available()) {
     Incoming += (char)LoRa.read();
-    //----------------------------------------
   }
 
-  //---------------------------------------- Check length for error.
+  //Check length for error.
   if (incomingLength != Incoming.length()) {
     Serial.println();
     Serial.println("error: message length does not match length");
     return; //--> skip rest of function
   }
-  //----------------------------------------
 
-  //---------------------------------------- Checks whether the incoming data or message for this device.
+  //Checks whether the incoming data or message for this device.
   if (recipient != LocalAddress) {
     Serial.println();
     Serial.println("This message is not for me.");
     return; //--> skip rest of function
   }
-  //----------------------------------------
 
-  //---------------------------------------- if message is for this device, or broadcast, print details:
   Serial.println();
   Serial.println("Received from: 0x" + String(sender, HEX));
-  //Serial.println("Message length: " + String(incomingLength));
   Serial.println("Message: " + Incoming);
   Serial.println("RSSI: " + String(LoRa.packetRssi()));
-  //Serial.println("Snr: " + String(LoRa.packetSnr()));
-  //----------------------------------------
-
-  // Calls the Processing_incoming_data() subroutine.
   Processing_incoming_data();
 }
+
 void Processing_incoming_data()
 {
   int pos1 = Incoming.indexOf('/');
@@ -99,14 +90,13 @@ void Processing_incoming_data()
   String readingID = Incoming.substring(0, pos1);
   if (readingID == DeviceID)
   {
-    volume = atof(Incoming.substring(pos1 + 1, pos2).c_str());
+    totalLitresOld = atof(Incoming.substring(pos1 + 1, pos2).c_str());
     credits = atof(Incoming.substring(pos2 + 1, pos3).c_str());
     cost = atof(Incoming.substring(pos3 + 1, Incoming.length()).c_str());
-    Serial.printf("Cost per Litre: %.2f ", cost);
-    Serial.printf("Available Credits: %.2f ", credits);
-    Serial.printf("Volume Consumed: %.2f ", volume);
+    Serial.printf("Cost per Litre: %.2f \n", cost);
+    Serial.printf("Available Credits: %.2f \n", credits);
+    Serial.printf("Volume Consumed: %.2f \n", totalLitresOld);
   }
-  getReadings();
 }
 //----------------------------------------
 //           void getReadings()
@@ -115,16 +105,19 @@ void getReadings() {
   if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
     detachInterrupt(digitalPinToInterrupt(sensorPin));
     flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
-    currentVolume =  2.126 * pulse1 / 1000;
+    oldTime = millis(); // Update oldTime
+    flowLitres =  2.126 * pulse1 / 1000;
+    totalLitres = totalLitresOld + flowLitres;
+
     Serial.printf("Flow rate: %.2f L/min\n", flowRate);
-    Serial.printf("Total volume: %.3f L\n", volume);
-    if(flowRate>0)
+    Serial.printf("Total volume: %.3f L\n", totalLitres);
+    
+    if (flowRate > 0)
     {
-    volume+=currentVolume;
-    sendLoRaData();
+      sendLoRaData();
+      Serial.println("Sending Data over LoRa");
     }
     pulse = 0; // Reset pulse count
-    oldTime = millis(); // Update oldTime
     attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
   }
   delay(500);
@@ -133,53 +126,45 @@ void getReadings() {
 //           void sendLoRaData()
 //----------------------------------------
 void sendLoRaData() {
-  Message = String(DeviceID) + "/" + String(volume) + "&" + String(credits)+ "#" + String(cost);
-  sendMessage(Message,Destination_Master);
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.print("LoRa packet sent!");
-  display.setCursor(0, 20);
-  display.print("Total Volume:");
-  display.setCursor(72, 20);
-  display.print(volume);
-  display.setCursor(0, 30);
-  display.print("Flow Rate:");
-  display.setCursor(54, 30);
-  display.print(flowRate);
-  display.setCursor(0, 40);
-  display.print("Avl Credits:");
-  display.setCursor(54, 40);
-  display.print(credits);
+  Message = String(DeviceID) + "/" + String(totalLitres) + "&" + String(credits) + "#" + String(cost);
+  sendMessage(Message, Destination_Master);
 }
+
 void increase() {
   pulse++;
   pulse1++;
 }
+
+void getDataFromLoRa()
+{
+  sendMessage("Hi", Destination_Master);
+}
+
 void setup() {
   Serial.begin(115200);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("Display init Failed"));
-    for (;;); 
-  }
-  display.display();
-  delay(2000); 
-  display.clearDisplay();  
   LoRa.setPins(ss, rst, dio0);
   Serial.println("Start LoRa init...");
   if (!LoRa.begin(433E6)) {
     Serial.println("LoRa init failed. Check your connections.");
-    while (true);                                     
+    while (true);
   }
   Serial.println("LoRa init succeeded.");
-  display.setCursor(0, 10);
-  display.print("LoRa Initializing OK!");
+  pinMode(sensorPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("Display init Failed"));
+    for (;;);
+  }
   display.display();
   delay(2000);
-  display.clearDisplay();                             
+  display.clearDisplay();
+  oldTime = millis(); // Initialize oldTime variable
+  getDataFromLoRa();
 }
 
 
 void loop() {
   onReceive(LoRa.parsePacket());
+  getReadings();
 }
