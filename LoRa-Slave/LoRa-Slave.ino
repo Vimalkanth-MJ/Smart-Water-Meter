@@ -102,6 +102,7 @@ void Processing_incoming_data()
 //           void getReadings()
 //----------------------------------------
 void getReadings() {
+  
   if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
     detachInterrupt(digitalPinToInterrupt(sensorPin));
     flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
@@ -121,6 +122,7 @@ void getReadings() {
     attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
   }
   delay(500);
+  DisplayData();
 }
 //----------------------------------------
 //           void sendLoRaData()
@@ -138,6 +140,26 @@ void increase() {
 void getDataFromLoRa()
 {
   sendMessage("Hi", Destination_Master);
+}
+
+void DisplayData()
+{
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+   display.setCursor(0, 10);
+  display.print("Total Volume:");
+  display.setCursor(85, 10);
+  display.print(totalLitres);
+  display.setCursor(0, 30);
+  display.print("Flow Rate:");
+  display.setCursor(85, 30);
+  display.print(flowRate);
+  display.setCursor(0, 50);
+  display.print("Avl Credits:");
+  display.setCursor(85, 50);
+  display.print(credits); 
+  display.display();
 }
 
 void setup() {
@@ -162,6 +184,7 @@ void setup() {
   oldTime = millis(); // Initialize oldTime variable
   getDataFromLoRa();
 }
+
 
 
 void loop() {
