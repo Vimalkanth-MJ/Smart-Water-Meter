@@ -25,12 +25,13 @@ String Incoming = "";
 String Message = "";
 String DeviceID = "Slave01";
 byte LocalAddress = 0x02;       //--> address of this device (Slave 1).
+bool executed = false;
 byte Destination_Master = 0x01; //--> destination to send to Master (ESP32).
 //----------------------------------------
 //      Defining Variables
 //----------------------------------------
 int sensorPin = 4;
-int relayPin = 15;
+int relayPin = 26;
 volatile long pulse, pulse1;
 float cost, creditsOld, totalCredits, flowCredits;
 float flowRate, totalLitres, totalLitresOld, flowLitres;
@@ -102,7 +103,6 @@ void Processing_incoming_data()
 //           void getReadings()
 //----------------------------------------
 void getReadings() {
-
   if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
     detachInterrupt(digitalPinToInterrupt(sensorPin));
     flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
@@ -111,20 +111,35 @@ void getReadings() {
     totalLitres = totalLitresOld + flowLitres;
     flowCredits = flowLitres * cost;
     totalCredits = creditsOld - flowCredits;
-    Serial.printf("Flow rate: %.2f L/min\n", flowRate);
-    Serial.printf("Total volume: %.3f L\n", totalLitres);
-    Serial.printf("Avl. Credits: %.2f L\n", totalCredits);
-    if (flowRate > 0)
+    if (totalCredits > 0)
     {
-      sendLoRaData();
-      Serial.println("Sending Data over LoRa");
+      digitalWrite(relayPin, LOW);
+      Serial.printf("Flow rate: %.2f L/min\n", flowRate);
+      Serial.printf("Total volume: %.3f L\n", totalLitres);
+      Serial.printf("Avl. Credits: %.2f L\n", totalCredits);
+      DisplayData();
+      if (flowRate > 0)
+      {
+        sendLoRaData();
+        Serial.println("Sending Data over LoRa");
+      }
+      pulse = 0; // Reset pulse count
+      attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
     }
-    pulse = 0; // Reset pulse count
-    attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
+    else {
+      totalCredits = 0;
+      if (!executed) {
+        sendLoRaData();
+        executed = true;
+      }
+      digitalWrite(relayPin, HIGH);
+      delay(2000);
+      DisplayNoData();
+    }
   }
   delay(500);
-  DisplayData();
 }
+
 //----------------------------------------
 //           void sendLoRaData()
 //----------------------------------------
@@ -166,6 +181,20 @@ void DisplayData()
   display.print(totalCredits);
   display.display();
 }
+void DisplayNoData()
+{
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 20);
+  display.print("Avl Credits:");
+  display.setCursor(85, 20);
+  display.print(totalCredits);
+  display.setTextSize(1);
+  display.setCursor(0, 40);
+  display.print("Please Recharge.!");
+  display.display();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -177,6 +206,8 @@ void setup() {
   }
   Serial.println("LoRa init succeeded.");
   pinMode(sensorPin, INPUT);
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW);
   attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
