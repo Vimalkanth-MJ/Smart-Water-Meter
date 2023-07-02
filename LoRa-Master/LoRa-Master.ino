@@ -1,10 +1,21 @@
-
 #include <SPI.h>
 #include <LoRa.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+
+char ssid[] = "Link_Guest";
+char pass[] = "easyaccess";
 
 #define ss 5
 #define rst 17
 #define dio0 2
+
+#define BLYNK_TEMPLATE_ID "TMPL3oljYgoST"
+#define BLYNK_TEMPLATE_NAME "Smart Water Meter"
+#define BLYNK_AUTH_TOKEN "vmtVlMjWs0_b4UBgggEqUP3TCvpa3ZcL"
+#define BLYNK_PRINT Serial
+BlynkTimer timer;
 
 String Incoming = "";
 String Message = "";
@@ -20,6 +31,61 @@ byte Slv = 0;
 
 float cost1, volume1, credits1;
 float cost2, volume2, credits2;
+float remainingVolume1, remainingVolume2;
+
+BLYNK_CONNECTED() {
+  Blynk.syncVirtual(V1, V3, V4, V5);
+}
+
+BLYNK_WRITE(V1)
+{
+  credits1 = param.asFloat();
+  sendDataToClient();
+  computeRemainingVolume();
+
+}
+BLYNK_WRITE(V3)
+{
+  volume1 = param.asFloat();
+  sendDataToClient();
+}
+BLYNK_WRITE(V4)
+{
+  remainingVolume1 = param.asFloat();
+}
+BLYNK_WRITE(V5)
+{
+  cost1 = param.asFloat();
+  computeRemainingVolume();
+  sendDataToClient();
+}
+
+void computeRemainingVolume()
+{
+  remainingVolume1 = credits1 / cost1;
+  Blynk.virtualWrite(V4, remainingVolume1);
+}
+
+void sendDataToClient()
+{
+  Message = "Slave01/" + String(volume1) + "&" + String(credits1) + "#" + String(cost1);
+  Serial.println(" : " + Message);
+  sendMessage(Message, Destination_ESP32_Slave_1);
+}
+
+void sendDataToBlynk()
+{
+  Blynk.virtualWrite(V1, credits1);
+  Blynk.virtualWrite(V3, volume1);
+  Blynk.virtualWrite(V4, remainingVolume1);
+  Blynk.virtualWrite(V5, cost1);
+}
+
+void ResetToDefaultData()
+{
+  cost1 = 10, volume1 = 0, credits1 = 100, cost2 = 10, volume2 = 0, credits2 = 100;
+  sendDataToBlynk();
+}
 
 void sendMessage(String Outgoing, byte Destination) {
   LoRa.beginPacket();             //--> start packet
@@ -96,15 +162,21 @@ void onReceive(int packetSize) {
       volume1 = atof(Incoming.substring(pos1 + 1, pos2).c_str());
       credits1 = atof(Incoming.substring(pos2 + 1, pos3).c_str());
       cost1 = atof(Incoming.substring(pos3 + 1, Incoming.length()).c_str());
+      remainingVolume1 = credits1 / cost1;
       Serial.printf("Available Credits: %.2f ", credits1);
       Serial.printf("Volume Consumed: %.2f ", volume1);
       Serial.printf("Cost per Litre: %.2f ", cost1);
+      if (credits1 == 0)
+      {
+        volume1 = 0;
+      }
     }
     else if (readingID == "Slave02")
     {
       volume2 = atof(Incoming.substring(pos1 + 1, pos2).c_str());
       credits2 = atof(Incoming.substring(pos2 + 1, pos3).c_str());
       cost2 = atof(Incoming.substring(pos3 + 1, Incoming.length()).c_str());
+      remainingVolume2 = credits2 / cost2;
       Serial.printf("Available Credits: %.2f ", credits2);
       Serial.printf("Volume Consumed: %.2f ", volume2);
       Serial.printf("Cost per Litre: %.2f ", cost2);
@@ -112,8 +184,10 @@ void onReceive(int packetSize) {
     else
     {
     }
+    sendDataToBlynk();
   }
 }
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -127,9 +201,12 @@ void setup() {
     while (true);                       // if failed, do nothing
   }
   Serial.println("LoRa init succeeded.");
-  cost1 = 10, volume1 = 0, credits1 = 100, cost2 = 10, volume2 = 0, credits2 = 100;
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  timer.setInterval(1000L, sendDataToBlynk);
 }
 
 void loop() {
   onReceive(LoRa.parsePacket());
+  Blynk.run();
+  timer.run();
 }

@@ -26,6 +26,7 @@ String Message = "";
 String DeviceID = "Slave01";
 byte LocalAddress = 0x02;       //--> address of this device (Slave 1).
 bool executed = false;
+bool msgRecieved = false;
 byte Destination_Master = 0x01; //--> destination to send to Master (ESP32).
 //----------------------------------------
 //      Defining Variables
@@ -36,6 +37,7 @@ volatile long pulse, pulse1;
 float cost, creditsOld, totalCredits, flowCredits;
 float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
+unsigned long previousTime = 0;
 const float FLOW_CALIBRATION = 7.5;
 
 void sendMessage(String Outgoing, byte Destination) {
@@ -81,6 +83,7 @@ void onReceive(int packetSize) {
   Serial.println("Message: " + Incoming);
   Serial.println("RSSI: " + String(LoRa.packetRssi()));
   Processing_incoming_data();
+  msgRecieved = true;
 }
 
 void Processing_incoming_data()
@@ -94,29 +97,36 @@ void Processing_incoming_data()
     totalLitresOld = atof(Incoming.substring(pos1 + 1, pos2).c_str());
     creditsOld = atof(Incoming.substring(pos2 + 1, pos3).c_str());
     cost = atof(Incoming.substring(pos3 + 1, Incoming.length()).c_str());
+    Serial.println("Incoming LoRa Data=====================================================================");
     Serial.printf("Cost per Litre: %.2f \n", cost);
     Serial.printf("Available Credits: %.2f \n", creditsOld);
     Serial.printf("Volume Consumed: %.2f \n", totalLitresOld);
+    Serial.println();
+    Serial.println("============================================================================");
+    totalCredits = creditsOld;
   }
 }
 //----------------------------------------
 //           void getReadings()
 //----------------------------------------
 void getReadings() {
-  if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
-    detachInterrupt(digitalPinToInterrupt(sensorPin));
-    flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
-    oldTime = millis(); // Update oldTime
-    flowLitres =  2.126 * pulse1 / 1000;
-    totalLitres = totalLitresOld + flowLitres;
-    flowCredits = flowLitres * cost;
-    totalCredits = creditsOld - flowCredits;
-    if (totalCredits > 0)
-    {
+  if (totalCredits > 0)
+  {
+    if ((millis() - oldTime) > 1000) { // Only calculate flow rate once per second
+      detachInterrupt(digitalPinToInterrupt(sensorPin));
+      flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION;
+      oldTime = millis(); // Update oldTime
+      flowLitres =  2.126 * pulse1 / 1000;
+      totalLitres = totalLitresOld + flowLitres;
+      flowCredits = flowLitres * cost;
+      totalCredits = creditsOld - flowCredits;
       digitalWrite(relayPin, LOW);
       Serial.printf("Flow rate: %.2f L/min\n", flowRate);
       Serial.printf("Total volume: %.3f L\n", totalLitres);
       Serial.printf("Avl. Credits: %.2f L\n", totalCredits);
+      Serial.println();
+      Serial.println();
+      Serial.println();
       DisplayData();
       if (flowRate > 0)
       {
@@ -126,18 +136,25 @@ void getReadings() {
       pulse = 0; // Reset pulse count
       attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
     }
-    else {
-      totalCredits = 0;
-      if (!executed) {
-        sendLoRaData();
-        executed = true;
-      }
-      digitalWrite(relayPin, HIGH);
-      delay(2000);
-      DisplayNoData();
-    }
   }
-  delay(500);
+  else {
+    totalCredits = 0;
+    totalLitres = 0;
+    flowLitres = 0;
+    flowCredits = 0;
+    pulse = 0; pulse1 = 0;
+    oldTime = millis();
+    if (!executed) {
+      sendLoRaData();
+      executed = true;
+    }
+    digitalWrite(relayPin, HIGH);
+    DisplayNoData();
+    getDataFromLoRa();
+    onReceive(LoRa.parsePacket());
+    delay(500);
+    Serial.println("Waiting for packets");
+  }
 }
 
 //----------------------------------------
@@ -166,7 +183,7 @@ void DisplayData()
   display.setCursor(0, 10);
   display.print("Total Volume:");
   display.setCursor(85, 10);
-  display.print(totalLitres);
+  display.print(flowLitres);
   display.setCursor(120, 10);
   display.print("L");
   display.setCursor(0, 30);
@@ -221,9 +238,26 @@ void setup() {
   getDataFromLoRa();
 }
 
-
-
 void loop() {
   onReceive(LoRa.parsePacket());
+  if (msgRecieved == true)
+  {
+    Serial.println("Sleeping");
+    Serial.printf("Flow rate: %.2f L/min\n", flowRate);
+    Serial.printf("cost: %.2f L/min\n", cost);
+    Serial.printf("creditsOld: %.2f L/min\n", creditsOld);
+    Serial.printf("totalCredits: %.2f L/min\n", totalCredits);
+    Serial.printf("flowCredits: %.2f L/min\n", flowCredits);
+    Serial.printf("totalLitres: %.2f L/min\n", totalLitres);
+    Serial.printf("totalLitresOld: %.2f L/min\n", totalLitresOld);
+    Serial.printf("flowLitres: %.2f L/min\n", flowLitres);
+    Serial.println();
+    Serial.println();
+    Serial.println();
+    Serial.println();
+    Serial.println();
+    msgRecieved = false;
+    delay(5000);
+  }
   getReadings();
 }
