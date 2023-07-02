@@ -1,4 +1,4 @@
-# 🚀Smart Prepaid Water Meter System! 🌊💧
+# ⚙️Smart Prepaid Water Meter💧
 
 This  solution incorporates LoRa technology to revolutionize the way water consumption is measured, monitored, and controlled.
 
