@@ -5,14 +5,14 @@ The YFS-201 Flow Sensor is utilized in this project. which operates on the Hall 
 
 As the liquid flows through the sensor, it causes the turbine to rotate. The rotating turbine generates a magnetic field that is detected by the Hall Effect sensor, which in turn converts it into electrical signals. These electrical signals, typically in the form of pulses, represent the flow rate of the liquid.
 
-Volume Calculation:
+**Volume Calculation:**
 
 In The process of Calibration I found that for 500mL flow sensor produces around 233 Pulses.
 
 Therfore, Volume in mL = 2.146 x pulse
 Volume in Liter = 2.146 x pulse / 1000
 
-Flow Rate Calculation: 
+**Flow Rate Calculation: **
 
 The formula used to calculate the flow rate in liters per minute is as follows:
 
