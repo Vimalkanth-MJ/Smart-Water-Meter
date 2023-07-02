@@ -120,7 +120,7 @@ void getReadings() {
       totalLitres = totalLitresOld + flowLitres;
       flowCredits = flowLitres * cost;
       totalCredits = creditsOld - flowCredits;
-      digitalWrite(relayPin, LOW);
+      digitalWrite(relayPin, HIGH);
       Serial.printf("Flow rate: %.2f L/min\n", flowRate);
       Serial.printf("Total volume: %.3f L\n", totalLitres);
       Serial.printf("Avl. Credits: %.2f L\n", totalCredits);
@@ -148,7 +148,7 @@ void getReadings() {
       sendLoRaData();
       executed = true;
     }
-    digitalWrite(relayPin, HIGH);
+    digitalWrite(relayPin, LOW);
     DisplayNoData();
     getDataFromLoRa();
     onReceive(LoRa.parsePacket());
