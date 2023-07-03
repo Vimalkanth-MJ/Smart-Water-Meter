@@ -23,8 +23,6 @@ This flow ensures that the ESP32 receives LoRa packets, processes the received d
 
 ## Functions Explained:
 
-Sure! Let's go through each function in the provided code and explain its purpose and how it works.
-
 📌 `BLYNK_CONNECTED()`: This is a Blynk library callback function that is called when the ESP32 connects to the Blynk server. In this code, it is used to synchronize the virtual pins V1, V3, V4, and V5 with their corresponding values on the Blynk server.
 
 📌 `BLYNK_WRITE(V1)`: This is another Blynk callback function that is called whenever the value of virtual pin V1 is updated on the Blynk app. In this code, it updates the `credits1` variable with the new value received from the app and then calls `sendDataToClient()` and `computeRemainingVolume()` functions.
