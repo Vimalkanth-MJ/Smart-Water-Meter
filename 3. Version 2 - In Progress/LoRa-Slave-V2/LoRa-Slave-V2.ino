@@ -41,8 +41,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define rst 14
 #define dio0 2
 const int sensorPin = 4;
-const int IN1 = 21;
-const int IN2 = 22;
+const int IN1 = 25;
+const int IN2 = 26;
 
 //----------------------------------------
 //      Defining LoRa Variables
