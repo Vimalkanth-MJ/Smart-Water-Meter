@@ -1,5 +1,9 @@
 # ⚙️Smart Prepaid Water Meter💧
 
+## Demo
+https://www.youtube.com/playlist?list=PLVWqMHg8Higch4oMkQKrTBomO5yeaebTJ
+Stay tuned for final version🔜🚧
+
 This  solution incorporates LoRa technology to revolutionize the way water consumption is measured, monitored, and controlled.
 
 Key Features:
@@ -16,7 +20,5 @@ Key Features:
 
 Join me on this journey to conserve water and create a more sustainable future! Together, let's make a positive impact on the way we consume and manage our most precious resource – water. 💧💚
 
-## Demo
-Version 1 - https://www.youtube.com/watch?v=INSHNqetg14
-Version 2 - In Progress🚧
+
 
