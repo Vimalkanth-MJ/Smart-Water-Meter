@@ -7,9 +7,9 @@ As the liquid flows through the sensor, it causes the turbine to rotate. The rot
 
 **Volume Calculation:**
 
-In The process of Calibration I found that for 500mL flow sensor produces around 233 Pulses.
+In the process of Calibration I found that for 500mL flow sensor produces around 233 Pulses.
 
-Therfore, Volume in mL = 2.146 x pulse
+Therefore, Volume in mL = 2.146 x pulse
 Volume in Liter = 2.146 x pulse / 1000
 
 **Flow Rate Calculation: **
