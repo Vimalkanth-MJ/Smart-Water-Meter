@@ -26,7 +26,7 @@
 #define ss 5
 #define rst 17
 #define dio0 2
-const int sensorPin = 21;
+const int sensorPin = 35;
 const int IN1 = 25;
 const int IN2 = 26;
 //----------------------------------------
@@ -78,7 +78,7 @@ void pulseZero()
   digitalWrite(IN2, HIGH);
 }
 
-void ValveON() {
+void ValveOFF() {
   valveOn = true;
   DEBUG_PRINTLN("Valve Turned ON");
   positivePulse();
@@ -87,7 +87,7 @@ void ValveON() {
   delay(2000);
 }
 
-void ValveOFF()
+void ValveON()
 {
   valveOn = false;
   DEBUG_PRINTLN("Valve Turned OFF");
