@@ -26,7 +26,7 @@
 #define ss 5
 #define rst 17
 #define dio0 2
-const int sensorPin = 35;
+const int sensorPin = 16;
 const int IN1 = 25;
 const int IN2 = 26;
 //----------------------------------------
@@ -51,6 +51,8 @@ float cost, creditsOld, totalCredits, flowCredits;
 float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
 unsigned long previousTime = 0;
+int idleDisplay_Screen_Update = 0;
+unsigned long idleDisplay_Screen_Update_Timer = millis();
 const float FLOW_CALIBRATION = 7.5;
 
 //-----------------------------------------------
@@ -190,19 +192,19 @@ void getReadings() {
       totalLitres = totalLitresOld + flowLitres;                               // Update the total volume consumed by adding the flow since the last calculation
       flowCredits = flowLitres * cost;                                         // Calculate the credits consumed based on the flow and cost per liter
       totalCredits = creditsOld - flowCredits;                                 // Update the available credits by subtracting the credits consumed
-      if (valveOn == false)
-      {
-        ValveON();      // TurnOn the Solenoid Valve For Water Flow
-      }
-      idleDisplayData();                                                          // Update the Data to Integrated Display
-      if (flowRate > 0)
-      {
-        displayWhileFlowing();
-        sendLoRaData();                                                        // if Flow is detected, sends the Data to Server Node Over LoRa Network
-        DEBUG_PRINTLN("Sending Data over LoRa");
-      }
       pulse = 0;                                                               // Reset the pulse count and reattach the interrupt
       attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
+    }
+    if (valveOn == false)
+    {
+      ValveON();      // TurnOn the Solenoid Valve For Water Flow
+    }
+    idleDisplayData();                                                          // Update the Data to Integrated Display
+    if (flowRate > 0)
+    {
+      displayWhileFlowing();
+      sendLoRaData();                                                        // if Flow is detected, sends the Data to Server Node Over LoRa Network
+      DEBUG_PRINTLN("Sending Data over LoRa");
     }
   }
   else {
@@ -283,7 +285,7 @@ void displayCredits()
   M5.Lcd.setFreeFont(FSSB24);
   M5.Lcd.drawString(String(totalCredits), 140, 120, 1);
   M5.Lcd.setFreeFont(FSSB9);
-  M5.Lcd.drawString("KES", 240, 130, 1);
+  M5.Lcd.drawString("KES", 265, 130, 1);
 }
 
 void displayRemainingVolume()
@@ -344,16 +346,44 @@ void noCreditsDisplay()
   M5.Lcd.drawString("Please Recharge Using QR", 10, 40, 1);
   M5.Lcd.qrcode("https://recharge.vimal.codes", 75, 60, 175, 6);
 }
-
-void idleDisplayData()
-{
+/*
+  void idleDisplayData()
+  {
   DisplayTotalWaterConsumption();
   delay(5000);
   displayCredits();
   delay(5000);
   displayRemainingVolume();
   delay(5000);
+  }*/
+
+void idleDisplayData()
+{
+  if (millis() - idleDisplay_Screen_Update_Timer > 2000)
+  {
+
+    idleDisplay_Screen_Update++;
+
+    if (idleDisplay_Screen_Update > 2)
+    {
+      idleDisplay_Screen_Update = 0;
+    }
+    idleDisplay_Screen_Update_Timer = millis();
+  }
+  if ( idleDisplay_Screen_Update == 0)
+  {
+    DisplayTotalWaterConsumption();
+  }
+  else if ( idleDisplay_Screen_Update == 1)
+  {
+    displayCredits();
+  }
+  else if ( idleDisplay_Screen_Update == 2)
+  {
+    displayRemainingVolume();
+  }
 }
+
 
 void setup() {
   Serial.begin(115200);
