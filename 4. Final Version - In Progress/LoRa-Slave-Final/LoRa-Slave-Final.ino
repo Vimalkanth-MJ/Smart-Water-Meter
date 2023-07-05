@@ -22,7 +22,6 @@
 //----------------------------------------
 //      Defining PIN Config Variables
 //----------------------------------------
-
 #define ss 5
 #define rst 17
 #define dio0 2
@@ -52,6 +51,10 @@ float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
 unsigned long previousTime = 0;
 int idleDisplay_Screen_Update = 0;
+bool clearedDisplayWhileFlowingScreen = false;
+bool clearedTotalWaterConsumptionScreen = false;
+bool clearedDisplayCreditsScreen = false;
+bool clearedDisplayRemainingVolumeScreen = false;
 unsigned long idleDisplay_Screen_Update_Timer = millis();
 const float FLOW_CALIBRATION = 7.5;
 
@@ -184,6 +187,7 @@ void Processing_incoming_data()
 void getReadings() {
   if (totalCredits > 0)
   {
+    executed = false;
     if ((millis() - oldTime) > 1000) {                                         // Only calculate flow rate once per second
       detachInterrupt(digitalPinToInterrupt(sensorPin));                       // Disable interrupt to prevent further pulse count
       flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION; // Calculate flow rate in liters per minute
@@ -199,12 +203,15 @@ void getReadings() {
     {
       ValveON();      // TurnOn the Solenoid Valve For Water Flow
     }
-    idleDisplayData();                                                          // Update the Data to Integrated Display
     if (flowRate > 0)
     {
       displayWhileFlowing();
       sendLoRaData();                                                        // if Flow is detected, sends the Data to Server Node Over LoRa Network
       DEBUG_PRINTLN("Sending Data over LoRa");
+    }
+    else
+    {
+      idleDisplayData();                                                          // Update the Data to Integrated Display
     }
   }
   else {
@@ -218,10 +225,10 @@ void getReadings() {
     // Send LoRa data only once when there are no available credits
     if (!executed) {
       sendLoRaData();
+      noCreditsDisplay();                // Display "No Data" message on the Integrate Display
       executed = true;
     }
     ValveOFF(); // Turn OFF the Solenoid Valve to prevent Water Flow
-    noCreditsDisplay();                // Display "No Data" message on the Integrate Display
     getDataFromLoRa();              // Request updated data from the master device over LoRa
     onReceive(LoRa.parsePacket());  // Check for any incoming LoRa packets
     DEBUG_PRINTLN("Waiting for packets");
@@ -255,7 +262,10 @@ void getDataFromLoRa()
 //------------------------------------------------------------------------------------
 
 void DisplayTotalWaterConsumption() {
-  M5.Lcd.fillScreen(TFT_BLACK);
+  if (!clearedTotalWaterConsumptionScreen) {
+    M5.Lcd.fillScreen(TFT_BLACK);
+    clearedTotalWaterConsumptionScreen = true;
+  }
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB9);
   M5.Lcd.drawString("TOTAL WATER CONSUMPTION", 20, 40, 1);
@@ -268,7 +278,10 @@ void DisplayTotalWaterConsumption() {
 
 void displayCredits()
 {
-  M5.Lcd.fillScreen(TFT_BLACK);
+  if (!clearedDisplayCreditsScreen) {
+    M5.Lcd.fillScreen(TFT_BLACK);
+    clearedDisplayCreditsScreen = true;
+  }
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB12);
   M5.Lcd.drawString("REMAINING CREDITS", 30, 40, 1);
@@ -290,7 +303,10 @@ void displayCredits()
 
 void displayRemainingVolume()
 {
-  M5.Lcd.fillScreen(TFT_BLACK);
+  if (!clearedDisplayRemainingVolumeScreen) {
+    M5.Lcd.fillScreen(TFT_BLACK);
+    clearedDisplayRemainingVolumeScreen = true;
+  }
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB12);
   M5.Lcd.drawString("REMAINING VOLUME", 35, 40, 1);
@@ -308,7 +324,15 @@ void displayRemainingVolume()
 
 void displayWhileFlowing()
 {
-  M5.Lcd.fillScreen(TFT_BLACK);
+  clearedTotalWaterConsumptionScreen = false;
+  clearedDisplayCreditsScreen = false;
+  clearedDisplayRemainingVolumeScreen = false;
+
+  if (!clearedDisplayWhileFlowingScreen) {
+    M5.Lcd.fillScreen(TFT_BLACK);
+    clearedDisplayWhileFlowingScreen = true;
+  }
+
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB12);
   M5.Lcd.drawString("FLOW RATE", 5, 25, 1);
@@ -346,19 +370,10 @@ void noCreditsDisplay()
   M5.Lcd.drawString("Please Recharge Using QR", 10, 40, 1);
   M5.Lcd.qrcode("https://recharge.vimal.codes", 75, 60, 175, 6);
 }
-/*
-  void idleDisplayData()
-  {
-  DisplayTotalWaterConsumption();
-  delay(5000);
-  displayCredits();
-  delay(5000);
-  displayRemainingVolume();
-  delay(5000);
-  }*/
 
 void idleDisplayData()
 {
+  clearedDisplayWhileFlowingScreen = false;
   if (millis() - idleDisplay_Screen_Update_Timer > 2000)
   {
 
@@ -367,6 +382,9 @@ void idleDisplayData()
     if (idleDisplay_Screen_Update > 2)
     {
       idleDisplay_Screen_Update = 0;
+      clearedTotalWaterConsumptionScreen = false;
+      clearedDisplayCreditsScreen = false;
+      clearedDisplayRemainingVolumeScreen = false;
     }
     idleDisplay_Screen_Update_Timer = millis();
   }
