@@ -47,7 +47,7 @@ byte Destination_Master = 0x01; //--> destination to send to Master (ESP32).
 
 volatile long pulse, pulse1;
 float cost, creditsOld, totalCredits, flowCredits;
-float flowRate, totalLitres, totalLitresOld, flowLitres;
+float flowRate, totalLitres, totalLitresOld, flowLitres, flowingVolume;
 unsigned long oldTime;
 unsigned long previousTime = 0;
 int idleDisplay_Screen_Update = 0;
@@ -83,7 +83,7 @@ void pulseZero()
   digitalWrite(IN2, HIGH);
 }
 
-void ValveOFF() {
+void ValveON() {
   valveOn = true;
   DEBUG_PRINTLN("Valve Turned ON");
   positivePulse();
@@ -92,7 +92,7 @@ void ValveOFF() {
   delay(2000);
 }
 
-void ValveON()
+void ValveOFF()
 {
   valveOn = false;
   DEBUG_PRINTLN("Valve Turned OFF");
@@ -192,7 +192,8 @@ void getReadings() {
       detachInterrupt(digitalPinToInterrupt(sensorPin));                       // Disable interrupt to prevent further pulse count
       flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION; // Calculate flow rate in liters per minute
       oldTime = millis();                                                      // Update oldTime
-      flowLitres =  2.126 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
+      flowingVolume = 2.34 * pulse / 1000;
+      flowLitres =  2.34 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
       totalLitres = totalLitresOld + flowLitres;                               // Update the total volume consumed by adding the flow since the last calculation
       flowCredits = flowLitres * cost;                                         // Calculate the credits consumed based on the flow and cost per liter
       totalCredits = creditsOld - flowCredits;                                 // Update the available credits by subtracting the credits consumed
@@ -273,7 +274,7 @@ void DisplayTotalWaterConsumption() {
   M5.Lcd.drawXBitmap(25, 80, waterConsumptionLogo, waterConsumptionLogoWidth, waterConsumptionLogoHeight, 0X07FF);
   M5.Lcd.setTextColor(0X03EF, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB24);
-  M5.Lcd.drawString(String(totalLitresOld) + " L", 140, 130, 1);
+  M5.Lcd.drawString(String(totalLitres) + " L", 140, 130, 1);
 }
 
 void displayCredits()
@@ -340,7 +341,9 @@ void displayWhileFlowing()
   M5.Lcd.drawXBitmap(30, 60, flowLogo, flowLogoWidth, flowLogoHeight, 0X03EF);
   M5.Lcd.setTextColor(0XFBE4, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB18);
-  M5.Lcd.drawString(String(flowRate), 20, 200, 1);
+  char flowRateData[5];
+  dtostrf(flowRate, 5, 2, flowRateData);
+  M5.Lcd.drawString(flowRateData, 20, 200, 1);
   M5.Lcd.setFreeFont(FSSB9);
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.drawString("L/min", 100, 205, 1);
@@ -353,7 +356,7 @@ void displayWhileFlowing()
   M5.Lcd.drawXBitmap(200, 70, flowVolumeLogo, flowVolumeLogoWidth, flowVolumeLogoHeight, 0X03EF);
   M5.Lcd.setTextColor(0XA254, TFT_BLACK);
   M5.Lcd.setFreeFont(FSSB18);
-  M5.Lcd.drawString(String(flowLitres), 200, 200, 1);
+  M5.Lcd.drawString(String(flowingVolume), 200, 200, 1);
   M5.Lcd.setFreeFont(FSSB9);
   M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Lcd.drawString("Liters", 275, 205, 1);
