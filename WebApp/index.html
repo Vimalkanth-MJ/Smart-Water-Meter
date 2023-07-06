@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Page Title</title>
+    <style>
+        /* CSS styles for center alignment */
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Verdana, sans-serif;
+        }
+
+        .devicecontainer {
+            text-align: center;
+            font-size: 18px; 
+        }
+
+        .input {
+            padding: 10px;
+            width: 300px;
+        }
+    
+        .button {
+            padding: 10px 20px;
+            display: inline-block;
+            border-radius: 4px;
+            background-color: #0091ff;
+            border: none;
+            color: #ffffff;
+            text-align: center;
+            font-size: 18px;
+            transition: all 0.5s;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .bottom {
+            position: absolute;
+            bottom: 0px;
+            text-align: center;
+            font-size: 12px; 
+        }
+
+        .button span {
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        .button span:after {
+            content: '\00bb';
+            position: absolute;
+            opacity: 0;
+            top: 0;
+            right: -20px;
+            transition: 0.5s;
+        }
+
+        .button:hover span {
+            padding-right: 25px;
+        }
+
+        .button:hover span:after {
+            opacity: 1;
+            right: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="devicecontainer">
+        <p>Enter device code <input type="text" class="input" id="deviceCode"></p>
+        <p><button class="button" onclick="storeData()"><span>Continue</span></button></p>
+    </div>
+    <div class="bottom">
+        <p>NOTE: Device code can be found at the back of the prepaid water meter.</p>
+    </div>
+</body>
+<script>
+    function storeData() {
+        var deviceCode = document.getElementById('deviceCode').value;
+        fetch('/storeDeviceCode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ deviceCode })
+      })
+        .then(response => response.text())
+        .then(message => {
+          alert(message);
+          window.location.href = 'index2.html';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+
+    }
+</script>
+</html>
+

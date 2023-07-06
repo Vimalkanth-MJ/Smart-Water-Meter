@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index 2</title>
+    <style>
+        /* CSS styles for center alignment */
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Verdana, sans-serif;
+        }
+
+        .devicecontainer {
+            text-align: center;
+            font-size: 18px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="devicecontainer">
+        <p id="deviceCodeText">Device code is: Loading...</p>
+        <p id="creditsText">Credits: Loading...</p>
+    </div>
+</body>
+<script src="https://www.gstatic.com/firebasejs/8.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.7.0/firebase-database.js"></script>
+<script>
+    fetch('/getDeviceCode')
+      .then(response => response.text())
+      .then(deviceCode => {
+        // Use the retrieved device code
+        var deviceCodeText = document.getElementById('deviceCodeText');
+        deviceCodeText.textContent = 'Device code is: ' + deviceCode;
+
+        // Fetch credits data
+        fetch('/getCreditsData')
+          .then(response => response.text())
+          .then(creditsData => {
+            // Use the retrieved credits data
+            var creditsText = document.getElementById('creditsText');
+            creditsText.textContent = 'Credits: ' + creditsData;
+          })
+          .catch(error => {
+            console.error('Error retrieving credits data:', error);
+          });
+      })
+      .catch(error => {
+        console.error('Error retrieving device code:', error);
+      });
+</script>
+</html>
