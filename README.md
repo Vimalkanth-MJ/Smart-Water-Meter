@@ -6,6 +6,7 @@ https://youtu.be/uqwhA6T2CwU
 ## Project Playlist
 https://www.youtube.com/playlist?list=PLVWqMHg8Higch4oMkQKrTBomO5yeaebTJ
 
+## ⚙️Smart Prepaid Water Meter💧
 
 This  solution incorporates LoRa technology to revolutionize the way water consumption is measured, monitored, and controlled.
 
