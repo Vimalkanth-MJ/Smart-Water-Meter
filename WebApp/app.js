@@ -1,3 +1,4 @@
+const https = require('https');
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -7,7 +8,6 @@ const axios = require('axios');
 
 const firebase = require('firebase/app');
 require('firebase/database');
-
 
 var firebaseConfig = {
   apiKey: "AIzaSyAXbbSPYCqxFcp9Ynb6nlmkkWcLQ8GaUgw",
@@ -166,42 +166,45 @@ app.post('/storeDeviceCode', (req, res) => {
   }
 });
 
+
 // Define endpoint to get credits data
 app.get('/getCreditsData', async (req, res) => {
-  try {
-    // Retrieve the user's Google ID from the session
-    const googleID = req.isAuthenticated() ? req.user.id : null;
+  const googleID = req.isAuthenticated() ? req.user.id : null;
 
-    if (googleID) {
-      // Retrieve device code from Firebase database
-      var database = firebase.database();
-      var ref = database.ref(googleID + '/' + googleID);
+  if (googleID) {
+    var database = firebase.database();
+    var ref = database.ref(googleID + '/' + googleID);
 
-      ref.once('value')
-        .then(async snapshot => {
-          var deviceCode = snapshot.val();
+    ref.once('value')
+      .then(snapshot => {
+        var deviceCode = snapshot.val();
 
-          // Make GET request to Blynk API
-          const response = await axios.get(`https://blynk.cloud/external/api/get?token=${deviceCode}&v1`);
-          const creditsData = response.data;
+        const url = `https://blynk.cloud/external/api/get?token=${deviceCode}&v1`;
 
-          // Send the retrieved credits data as a response
-          res.send(creditsData);
-        })
-        .catch(error => {
-          console.error('Error retrieving device code:', error);
-          res.status(500).send('Error retrieving device code.');
-        });
-    } else {
-      res.status(401).send('User not authenticated.');
-    }
-  } catch (error) {
-    console.error('Error retrieving credits data:', error);
-    res.status(500).send('Error retrieving credits data.');
+        axios.get(url)
+          .then(response => {
+            const creditsData = response.data;
+
+            // Send the retrieved credits data as a JSON response
+            res.json(creditsData);
+          })
+          .catch(error => {
+            console.error('Error retrieving credits data:', error);
+            res.status(500).send('Error retrieving credits data.');
+          });
+      })
+      .catch(error => {
+        console.error('Error retrieving device code:', error);
+        res.status(500).send('Error retrieving device code.');
+      });
+  } else {
+    res.status(401).send('User not authenticated.');
   }
 });
 
 
+
+// vmtVlMjWs0_b4UBgggEqUP3TCvpa3ZcL
 // Start the server
 app.listen(3000, () => {
   console.log('Server is running on http://localhost:3000');
