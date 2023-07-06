@@ -1,9 +1,9 @@
 //----------------------------------------
 //        Defining Header Files
 //----------------------------------------
-#include <M5Stack.h>
+#include <M5Core2.h>
 #include <SPI.h>
-#include <M5LoRa.h>
+#include <LoRa.h>
 #include "Fonts.h"
 #include "xbm.h"
 //----------------------------------------
@@ -22,10 +22,10 @@
 //----------------------------------------
 //      Defining PIN Config Variables
 //----------------------------------------
-#define ss 5
-#define rst 17
-#define dio0 2
-const int sensorPin = 16;
+#define ss 33
+#define rst 14
+#define dio0 32
+const int sensorPin = 13;
 const int IN1 = 25;
 const int IN2 = 26;
 //----------------------------------------
@@ -192,8 +192,12 @@ void getReadings() {
       detachInterrupt(digitalPinToInterrupt(sensorPin));                       // Disable interrupt to prevent further pulse count
       flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION; // Calculate flow rate in liters per minute
       oldTime = millis();                                                      // Update oldTime
-      flowingVolume = 2.34 * pulse / 1000;
-      flowLitres =  2.34 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
+      flowLitres =  2.520 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
+      flowingVolume = flowLitres;
+      if(flowRate == 0)
+      {
+        flowingVolume = 0;
+      }
       totalLitres = totalLitresOld + flowLitres;                               // Update the total volume consumed by adding the flow since the last calculation
       flowCredits = flowLitres * cost;                                         // Calculate the credits consumed based on the flow and cost per liter
       totalCredits = creditsOld - flowCredits;                                 // Update the available credits by subtracting the credits consumed
@@ -407,9 +411,8 @@ void idleDisplayData()
 
 
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
   M5.begin();        // Init M5Core.
-  M5.Power.begin();
   LoRa.setPins(ss, rst, dio0);
   DEBUG_PRINTLN("Start LoRa init...");
   if (!LoRa.begin(433E6)) {
