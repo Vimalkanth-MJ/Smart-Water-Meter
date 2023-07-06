@@ -3,7 +3,7 @@
 ## Demo 
 https://youtu.be/uqwhA6T2CwU
 
-## Demo 
+## Project Playlist
 https://www.youtube.com/playlist?list=PLVWqMHg8Higch4oMkQKrTBomO5yeaebTJ
 
 
