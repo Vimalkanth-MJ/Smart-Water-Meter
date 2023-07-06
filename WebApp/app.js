@@ -202,6 +202,74 @@ app.get('/getCreditsData', async (req, res) => {
   }
 });
 
+// Define endpoint to get TotalVolume data
+app.get('/getVolumeData', async (req, res) => {
+  const googleID = req.isAuthenticated() ? req.user.id : null;
+
+  if (googleID) {
+    var database = firebase.database();
+    var ref = database.ref(googleID + '/' + googleID);
+
+    ref.once('value')
+      .then(snapshot => {
+        var deviceCode = snapshot.val();
+
+        const url = `https://blynk.cloud/external/api/get?token=${deviceCode}&v3`;
+
+        axios.get(url)
+          .then(response => {
+            const TotalVolume = response.data;
+
+            // Send the retrieved TotalVolume data as a JSON response
+            res.json(TotalVolume);
+          })
+          .catch(error => {
+            console.error('Error retrieving TotalVolume data:', error);
+            res.status(500).send('Error retrieving TotalVolume data.');
+          });
+      })
+      .catch(error => {
+        console.error('Error retrieving device code:', error);
+        res.status(500).send('Error retrieving device code.');
+      });
+  } else {
+    res.status(401).send('User not authenticated.');
+  }
+});
+
+
+app.get('/sendCreditData', async (req, res) => {
+  const googleID = req.isAuthenticated() ? req.user.id : null;
+  const value = req.query.value; // Get the value from the query parameters
+
+  if (googleID) {
+    var database = firebase.database();
+    var ref = database.ref(googleID + '/' + googleID);
+
+    ref.once('value')
+      .then(snapshot => {
+        var deviceCode = snapshot.val();
+
+        // Make GET request to external API with the value parameter
+        const url = `https://blynk.cloud/external/api/update?token=${deviceCode}&v1=${value}`;
+
+        axios.get(url)
+          .then(response => {
+            res.send('Credit data sent successfully.');
+          })
+          .catch(error => {
+            console.error('Error sending credit data:', error);
+            res.status(500).send('Error sending credit data.');
+          });
+      })
+      .catch(error => {
+        console.error('Error retrieving device code:', error);
+        res.status(500).send('Error retrieving device code.');
+      });
+  } else {
+    res.status(401).send('User not authenticated.');
+  }
+});
 
 
 // vmtVlMjWs0_b4UBgggEqUP3TCvpa3ZcL

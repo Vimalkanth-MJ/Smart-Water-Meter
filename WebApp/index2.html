@@ -3,52 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Index 2</title>
+    <title>AquaCharge</title>
     <style>
-        /* CSS styles for center alignment */
-        html, body {
-            height: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, Verdana, sans-serif;
-        }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
 
-        .devicecontainer {
-            text-align: center;
-            font-size: 18px; 
-        }
+.devicecontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+#TotalVolume,
+#creditsData {
+  font-size: 18px;
+  color: #333;
+}
+
+form {
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+input[type="text"] {
+  width: 200px;
+  padding: 5px;
+  font-size: 14px;
+}
+
+button[type="submit"] {
+  background-color: #008cba;
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
     </style>
 </head>
 <body>
     <div class="devicecontainer">
-        <p id="deviceCodeText">Device code is: Loading...</p>
+        <p id="TotalVolume">Total Volume Consumed : Loading...</p>
         <p id="creditsData">Credits Available: Loading...</p>
+    
+        <form action="/sendCreditData" method="GET" onsubmit="handleSubmit(event)">
+        <input type="text" id="value" name="value" required>
+    
+        <button type="submit">Recharge</button>
+      </form>
     </div>
-
 </body>
 <script>
-    fetch('/getDeviceCode')
-    .then(response => response.text())
-    .then(deviceCode => {
-        // Use the retrieved device code
-        var deviceCodeText = document.getElementById('deviceCodeText');
-        deviceCodeText.textContent = 'Device code is: ' + deviceCode;
+    fetch('/getVolumeData')
+      .then(response => response.text())
+      .then(TotalVolume => {
+        // Use the retrieved credits data
+        document.getElementById('TotalVolume').textContent = 'Total Volume Consumed: ' + TotalVolume;
       })
       .catch(error => {
-        console.error('Error retrieving device code:', error);
+        console.error('Error retrieving credits data:', error);
     });
 
     fetch('/getCreditsData')
       .then(response => response.text())
       .then(creditsData => {
         // Use the retrieved credits data
-        document.getElementById('creditsData').textContent = 'Credits: ' + creditsData;
+        document.getElementById('creditsData').textContent = 'Available Credits: ' + creditsData;
       })
       .catch(error => {
         console.error('Error retrieving credits data:', error);
     });
 
+    function handleSubmit(event) {
+      event.preventDefault(); // Prevent the form from submitting normally
+      
+      // Get the value entered by the user
+      var valueInput = document.getElementById('value');
+      var oldValue = document.getElementById('creditsData');
+      var value = valueInput.value;
+      var total = parseInt(valueInput.value) + parseInt(oldValue.textContent.split(': ')[1]);
+        fetch(`/sendCreditData?value=${total}`)
+        .then(response => {
+            if (response.ok) {
+            // Request was successful
+            console.log('Credit data sent successfully.');
+            location.reload();
+            } else {
+            // Request failed
+            console.error('Error sending credit data:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending credit data:', error);
+        });
+
+      // Optionally, you can perform additional actions or send the value using AJAX
+    }
 </script>
 </html>
