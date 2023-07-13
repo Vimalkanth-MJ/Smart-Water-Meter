@@ -1,5 +1,5 @@
 #include <SPI.h>
-#include <M5LoRa.h>
+#include <LoRa.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
