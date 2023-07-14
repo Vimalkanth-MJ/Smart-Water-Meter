@@ -3,11 +3,11 @@
 //----------------------------------------
 
 #include <SPI.h>
-#include <LoRa.h>
+#include "LoRa_STM32.h"
 //Libraries for OLED Display
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SSD1306_STM32.h>
 
 //----------------------------------------
 //     Enable/Disable the Debugging
@@ -27,22 +27,16 @@
 //      Defining Display Variables
 //----------------------------------------
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define OLED_RESET 4  
+Adafruit_SSD1306 display(OLED_RESET);
 
 //----------------------------------------
 //      Defining PIN Config Variables
 //----------------------------------------
 
-#define ss 5
-#define rst 14
-#define dio0 2
-const int sensorPin = 4;
-const int IN1 = 25;
-const int IN2 = 26;
+const int sensorPin = PA11;
+const int IN1 = PB8;
+const int IN2 = PB9;
 
 //----------------------------------------
 //      Defining LoRa Variables
@@ -67,6 +61,7 @@ float flowRate, totalLitres, totalLitresOld, flowLitres;
 unsigned long oldTime;
 unsigned long previousTime = 0;
 const float FLOW_CALIBRATION = 7.5;
+
 //-----------------------------------------------
 // Function to generate Pulse for Solenoid valve
 //-----------------------------------------------
@@ -309,7 +304,6 @@ void DisplayNoData()
 //------------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
-  LoRa.setPins(ss, rst, dio0);
   DEBUG_PRINTLN("Start LoRa init...");
   if (!LoRa.begin(433E6)) {
     DEBUG_PRINTLN("LoRa init failed. Check your connections.");
@@ -321,11 +315,11 @@ void setup() {
   pinMode(IN2, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     DEBUG_PRINTLN(F("Display init Failed"));
     for (;;);
   }
-  display.display();
+
   delay(2000);
   display.clearDisplay();
   oldTime = millis();
