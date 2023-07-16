@@ -1,7 +1,7 @@
 # ⚙️Smart Prepaid Water Meter💧
 
 ## Demo 
-https://youtu.be/uqwhA6T2CwU
+https://youtu.be/uqwhA6T2CwU || https://youtu.be/_NcvGf2EIBE
 
 ## Project Playlist
 https://www.youtube.com/playlist?list=PLVWqMHg8Higch4oMkQKrTBomO5yeaebTJ
