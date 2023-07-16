@@ -191,26 +191,36 @@ void Processing_incoming_data()
 void getReadings() {
   if (totalCredits > 0)
   {
+    executed = false;
     if ((millis() - oldTime) > 1000) {                                         // Only calculate flow rate once per second
       detachInterrupt(digitalPinToInterrupt(sensorPin));                       // Disable interrupt to prevent further pulse count
       flowRate = ((1000.0 / (millis() - oldTime)) * pulse) / FLOW_CALIBRATION; // Calculate flow rate in liters per minute
       oldTime = millis();                                                      // Update oldTime
-      flowLitres =  2.126 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
+      flowLitres =  2.520 * pulse1 / 1000;                                     // Calculate the flow in liters since the last calculation
+      flowingVolume = flowLitres;
+      if(flowRate == 0)
+      {
+        flowingVolume = 0;
+      }
       totalLitres = totalLitresOld + flowLitres;                               // Update the total volume consumed by adding the flow since the last calculation
       flowCredits = flowLitres * cost;                                         // Calculate the credits consumed based on the flow and cost per liter
       totalCredits = creditsOld - flowCredits;                                 // Update the available credits by subtracting the credits consumed
-      if (valveOn == false)
-      {
-        ValveON();      // TurnOn the Solenoid Valve For Water Flow
-      }
-      DisplayData();                                                           // Update the Data to Integrated Display
-      if (flowRate > 0)
-      {
-        sendLoRaData();                                                        // if Flow is detected, sends the Data to Server Node Over LoRa Network
-        DEBUG_PRINTLN("Sending Data over LoRa");
-      }
       pulse = 0;                                                               // Reset the pulse count and reattach the interrupt
       attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
+    }
+    if (valveOn == false)
+    {
+      ValveON();      // TurnOn the Solenoid Valve For Water Flow
+    }
+    if (flowRate > 0)
+    {
+      DisplayData();
+      sendLoRaData();                                                        // if Flow is detected, sends the Data to Server Node Over LoRa Network
+      DEBUG_PRINTLN("Sending Data over LoRa");
+    }
+    else
+    {
+      DisplayData();                                                          // Update the Data to Integrated Display
     }
   }
   else {
@@ -224,10 +234,10 @@ void getReadings() {
     // Send LoRa data only once when there are no available credits
     if (!executed) {
       sendLoRaData();
+      DisplayNoData();                // Display "No Data" message on the Integrate Display
       executed = true;
     }
     ValveOFF(); // Turn OFF the Solenoid Valve to prevent Water Flow
-    DisplayNoData();                // Display "No Data" message on the Integrate Display
     getDataFromLoRa();              // Request updated data from the master device over LoRa
     onReceive(LoRa.parsePacket());  // Check for any incoming LoRa packets
     DEBUG_PRINTLN("Waiting for packets");
@@ -315,11 +325,7 @@ void setup() {
   pinMode(IN2, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(sensorPin), increase, RISING);
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    DEBUG_PRINTLN(F("Display init Failed"));
-    for (;;);
-  }
-
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   delay(2000);
   display.clearDisplay();
   oldTime = millis();
